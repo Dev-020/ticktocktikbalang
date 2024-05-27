@@ -1,0 +1,7 @@
+all: compile link
+
+compile:
+	g++ -DSFML_STATIC -ISFML/include -c main.cpp -o SFML/main.o
+
+link:
+	g++ -o main SFML/main.o -LSFML/lib -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lwinmm -lopengl32 -lgdi32 -lfreetype -std=c++17
