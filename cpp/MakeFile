@@ -1,7 +1,7 @@
 all: compile link
 
 compile:
-	g++ -c function.cpp -o SFML/function.o
+	g++ -DSFML_STATIC -ISFML/include -c function.cpp -o SFML/function.o
 	g++ -DSFML_STATIC -ISFML/include -c main.cpp -o SFML/main.o 
 
 link:
@@ -9,3 +9,5 @@ link:
 		-lsfml-graphics-s -lsfml-window-s -lsfml-system-s \
 		-lwinmm -lopengl32 -lgdi32 -lfreetype \
 		-std=c++17
+
+# mingw32-make -f MakeFile
