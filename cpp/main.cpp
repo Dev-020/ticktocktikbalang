@@ -32,7 +32,6 @@ int main()
     sf::Vector2f squarePos;
     sf::Vector2f displacement;
     sf::Time elapsedTime;
-    sf::Time menuTime;
 
     // --------------Creating Game State-------------------
     // Enemy
@@ -41,6 +40,9 @@ int main()
 
     // Player
     player rectangle;
+
+    // Skills
+    effect time_slow(0, 0, 10.f, 5000, 0);
 
     // Start Clock
     sf::Clock clock;
@@ -114,7 +116,7 @@ int main()
                             if (button.getGlobalBounds().contains(localMouse.x, localMouse.y))
                             {
                                 // Reset Game State
-                                if (!(rectangle.health <= 0) && enemies < MAXENEMIES && level % 5 == 0) enemies += (50 * (level / 5));
+                                if (!(rectangle.health <= 0) && enemies < MAXENEMIES && level % 5 == 0) enemies += (20 * (level / 5));
                                 if (rectangle.state == DEAD)
                                 {
                                     if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 20;
@@ -137,6 +139,14 @@ int main()
                     {
                         case sf::Keyboard::Scan::C: 
                             if (event.key.control) gameState = 0;
+                            break;
+                        case sf::Keyboard::Scan::Num1:
+                            if (time_slow.cooldown)
+                            {
+                                time_slow.timeAtCast = elapsedTime.asMilliseconds();
+                                time_slow.time_slow(white, enemies);
+                            }
+                            time_slow.cooldown = false;
                             break;
                     }
                 }
@@ -184,6 +194,10 @@ int main()
             // Current Player HP
             text.setString("Health: " + to_string(rectangle.health));
             displayString(&window, &text, sf::Vector2f(squarePos.x - text.getLocalBounds().width / 2.f, squarePos.y - 105.f));
+
+            // Time Slow
+            text.setString("Time Slow: " + to_string((time_slow.cooldown) ? 0 : time_slow.timer - (elapsedTime.asMilliseconds() - time_slow.timeAtCast)));
+            displayString(&window, &text, sf::Vector2f(0.f, 250.f));
 
             // Pause Application
             text.setString(sf::String("Pause Session with ctrl + C"));
@@ -240,6 +254,14 @@ int main()
                 angle = atan2((double)displacement.y, (double)displacement.x) * (180.f/PI);
                 rectangle.shield.setRotation(angle);
                 rectangle.shield.setPosition(squarePos.x, squarePos.y);
+
+                // Checking Skill Cooldowns
+                //Time Slow
+                if (elapsedTime.asMilliseconds() - time_slow.timeAtCast >= time_slow.timer)
+                {
+                    time_slow.cooldown = true;
+                    time_slow.timeAtCast = 0;
+                }
                 
                 //ENEMY LOGIC
                 // Spawning New Enemies

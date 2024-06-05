@@ -81,7 +81,15 @@ player::player()
     shield.setOrigin(-100.f, 150.f/2);
 }
 
-skill::skill()
+ int effect::time_slow(enemy *enemy, int enemies)
 {
-    cooldown = 0;
+    int c = 0;
+    for (int i = 0; i < enemies; ++i)
+        if (enemy[i].state == ALIVE)
+        {
+            c++;
+            enemy[i].mv /= mv;
+            enemy[i].object.setFillColor(sf::Color(enemy[i].object.getFillColor().r, 0, 255));
+        }
+    return c;
 }

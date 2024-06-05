@@ -41,9 +41,26 @@ public:
 class skill{
 public:
     sf::RectangleShape object;
-    int cooldown;
-    skill();
-    skill_function();
+    int timer, timeAtCast, duration;
+    bool cooldown;
+    skill(){
+        cooldown = true;
+        timer = timeAtCast = duration = 0;
+    }
+};
+
+class manifest: public skill{
+public:
+    float mv;
+    manifest(){
+        mv = 0;
+    }
+    manifest(float m, int t, int d){
+        mv = m;
+        timer = t;
+        duration = d;
+    }
+    void barrier(player player);
 };
 
 class effect: public skill{
@@ -53,7 +70,14 @@ public:
     effect(){
         health = state = mv = 0;
     }
-    skill_function(mv);
+    effect(int h, int s, float m, int t, int d){
+        health = health;
+        state = s;
+        mv = m;
+        timer = t;
+        duration = d;
+    }
+    int time_slow(enemy *enemy, int enemies);
 };
 
 void game(player *player, enemy *enemy, int enemies, int level);
