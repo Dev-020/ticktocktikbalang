@@ -5,7 +5,7 @@ using namespace std;
 int main()
 {
     // Window
-    sf::RenderWindow window(sf::VideoMode(1600, 1050), "rectangles");
+    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "rectangles");
     
     // Font
     sf::Font font;
@@ -13,8 +13,7 @@ int main()
         return EXIT_FAILURE;
 
     // Text
-    string s = "Hello World";
-    sf::Text text(s, font, 28);
+    sf::Text text("Hello World", font, 28);
     text.setFillColor(sf::Color::White);
     text.setOutlineColor(sf::Color::Black);
     text.setOutlineThickness(2.0f);
@@ -26,7 +25,7 @@ int main()
     // variables
     bool n = false;
     int hackerman = 0, gameState = 0, currentEnemy = 0, freeze, level = 1, end = 1;
-    double angle;
+    double angle, spawnRate = 1.f;
     
     //SFML Variables
     sf::Vector2i localMouse;
@@ -35,10 +34,10 @@ int main()
     sf::Time elapsedTime;
     sf::Time menuTime;
 
-    // --------------Initial Game State-------------------
+    // --------------Creating Game State-------------------
     // Enemy
-    int enemies = 100;
-    enemy white[enemies];
+    int enemies = 50;
+    enemy white[MAXENEMIES];
 
     // Player
     player rectangle;
@@ -46,21 +45,22 @@ int main()
     // Start Clock
     sf::Clock clock;
 
-    // Game Start
+    //----------------------------GAME START--------------------------
     while (window.isOpen())
     {
         // TIME
         elapsedTime = clock.getElapsedTime();
 
-        // Calculate Needed Values
+        // Get Entity Positions
         localMouse = sf::Mouse::getPosition(window);
         squarePos = rectangle.object.getPosition();
-        displacement = sf::Vector2f((float)localMouse.x - squarePos.x, (float)localMouse.y - squarePos.y);
-        angle = atan2((double)displacement.y, (double)displacement.x) * (180.f/PI);
 
         // Check Player Health
         if (rectangle.health <= 0)
+        {
+            rectangle.state = DEAD;
             gameState = 0;
+        }
         
         // Check Number of Enemies Left
         end = 1;
@@ -76,7 +76,7 @@ int main()
             {
                 currentEnemy = 0;
                 gameState = 0;
-                rectangle.health = 0;
+                rectangle.state = DEAD;
                 level++;
             }
         }
@@ -101,7 +101,7 @@ int main()
                 }
             }
 
-            // Checked Events Per Game State
+            //----------------------------EVENTS-------------------------------
             if (gameState == 0)
             {
                 if (event.type == sf::Event::KeyPressed && event.key.scancode == sf::Keyboard::Scan::C && event.key.control)
@@ -110,26 +110,18 @@ int main()
                 {
                     switch (event.mouseButton.button)
                     {
-                        case sf::Mouse::Left:
+                        case sf::Mouse::Left: // Initializing Game Values at Start
                             if (button.getGlobalBounds().contains(localMouse.x, localMouse.y))
                             {
                                 // Reset Game State
-                                if (rectangle.health <= 0)
+                                if (!(rectangle.health <= 0) && enemies < MAXENEMIES && level % 5 == 0) enemies += (50 * (level / 5));
+                                if (rectangle.state == DEAD)
                                 {
-                                    // Generating Initial Stats of Enemy
-                                    for (int i = 0; i < enemies; ++i)
-                                    {
-                                        white[i].object.setPosition((rand() % 2) ? WIDTH : 0, rand() % HEIGHT);
-                                        white[i].mv = ((rand() % (1 + (2 * level))) / 10.f) + MINMV;
-                                        white[i].state = DEAD;
-                                    }
+                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 20;
+                                    game(&rectangle, white, enemies, level);
                                     currentEnemy = 0;
-
-                                    // Setting Initial Position of Player
-                                    rectangle.object.setPosition(800.f, 525.f);
-                                    rectangle.shield.setPosition(squarePos.x, squarePos.y);
-                                    rectangle.health = 4 + (2 * level);
                                 }
+                                
                                 freeze = 3;
                                 gameState = 1;
                             }
@@ -154,75 +146,66 @@ int main()
 
         window.clear();
 
-        //---------------DEVELOPER TOOLS--------------------
+        //---------------DEVELOPER STATS--------------------
         if (hackerman)
         {
-            // Enemy MV
-            s = "Enemy MV: " + to_string(white[currentEnemy].mv);
-            text.setPosition(0.f, 0.f);
-            text.setString(s);
-            window.draw(text);
-
+            // Enemy Movement Speed
+            for (int i = 0; i < enemies; ++i)
+                if (white[i].state != DEAD)
+                {
+                    text.setString(to_string(white[i].mv));
+                    displayString(&window, &text, sf::Vector2f(white[i].object.getPosition().x - (text.getLocalBounds().width / 2.f), white[i].object.getPosition().y - (white[i].object.getGlobalBounds().height) - 10.f));
+                }
+            
             // Current Player Movemenet Speed
-            s = "Movespeed: " + to_string(rectangle.mv);
-            text.setString(s);
-            text.setPosition(0.f, 100.f);
-            window.draw(text); 
+            text.setString("Movespeed: " + to_string(rectangle.mv));
+            displayString(&window, &text, sf::Vector2f(0.f, 50.f));
 
-            // Displacement
-            s = "Displacement: " + to_string(displacement.x) + ", " + to_string(displacement.y);
-            text.setString(s);
-            text.setPosition(0.f, 200.f);
-            window.draw(text);
+            // Displacement between Player and Mouse
+            text.setString("Displacement: " + to_string(displacement.x) + ", " + to_string(displacement.y));
+            displayString(&window, &text, sf::Vector2f(0.f, 100.f));
 
-            // Current Shield Rotation
-            s = "Angle: " + to_string(rectangle.shield.getRotation());
-            text.setString(s);
-            text.setPosition(0.f, 250.f);
-            window.draw(text);
+            // Current Shield Angle around PLayer
+            text.setString("Angle: " + to_string(rectangle.shield.getRotation()));
+            displayString(&window, &text, sf::Vector2f(0.f, 150.f));
 
+            // Current Spawnrate
+            text.setString("Spawnrate: " + to_string(1000 / spawnRate));
+            displayString(&window, &text, sf::Vector2f(0.f, 200.f));
         }
 
         //------------------------LEVEL STATS---------------------------
         if (gameState)
         {
             // Current Enemy
-            s = "Enemies: " + to_string(enemies - currentEnemy);
-            text.setPosition(0.f, 50.f);
-            text.setString(s);
-            window.draw(text);
+            text.setString("Enemies Left: " + to_string(enemies - currentEnemy));
+            displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, text.getLocalBounds().height + 100.f));
 
             // Current Player HP
-            s = "Health: " + to_string(rectangle.health);
-            text.setString(s);
-            text.setPosition(0.f, 150.f);
-            window.draw(text);
+            text.setString("Health: " + to_string(rectangle.health));
+            displayString(&window, &text, sf::Vector2f(squarePos.x - text.getLocalBounds().width / 2.f, squarePos.y - 105.f));
 
             // Pause Application
             text.setString(sf::String("Pause Session with ctrl + C"));
-            text.setPosition(0.f, 1000.f);
-            window.draw(text);
+            displayString(&window, &text, sf::Vector2f(0.f, 1000.f));
         }
 
         //--------------------------GENERAL STATS----------------------
-
         // Level
-        s = "Level: " + to_string(level);
-        text.setString(s);
-        text.setPosition((WIDTH - text.getLocalBounds().width) / 2.f, text.getLocalBounds().height);
-        window.draw(text);
+        text.setString("Level: " + to_string(level));
+        displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, text.getLocalBounds().height));
 
         // Elapsed Time
-        s = "Time: " + to_string(elapsedTime.asSeconds());
-        text.setString(s);
-        text.setPosition(0.f, 300.f);
-        window.draw(text);
+        text.setString("Time: " + to_string((int)elapsedTime.asSeconds()));
+        displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, text.getLocalBounds().height + 50.f));
 
         if (!gameState) // MENU
         {
-            // Play Button
-            text.setString(sf::String("Play Game!"));
-            text.setPosition((WIDTH - text.getLocalBounds().width) / 2.f, (HEIGHT - text.getLocalBounds().height) / 2.f);
+            // Start Text
+            text.setString((rectangle.health > 0) ? "Start Level!" : "Try Again!");
+            displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, (HEIGHT - text.getLocalBounds().height) / 2.f));
+            
+            // Start Button
             button.setPosition(text.getPosition().x - 75, text.getPosition().y - 33);
             button.getGlobalBounds().contains(localMouse.x, localMouse.y) ? button.setFillColor(sf::Color::Yellow) : button.setFillColor(sf::Color::Blue);
             window.draw(button);
@@ -230,14 +213,15 @@ int main()
 
             // Exit Application
             text.setString(sf::String("Exit application with ctrl + C"));
-            text.setPosition(0.f, 1000.f);
-            window.draw(text);
+            displayString(&window, &text, sf::Vector2f(0.f, 1000.f));
         }
         else if (gameState)
         {
             if (freeze < 0)
             {
-                //---------------------------PLAYER STATS---------------------------------------
+                //------------------------------------------GAME ENGINE--------------------------------
+                //PLAYER LOGIC
+                // Player Movement
                 //mv = (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? BASEMV * 0.50 : BASEMV;
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
                     rectangle.object.move(-rectangle.mv, 0.f);
@@ -251,13 +235,15 @@ int main()
                 // Check if Squares at edge of window
                 boundary(&rectangle.object, WIDTH, HEIGHT);
                 
-                // Set Shield in Proper Position
+                // Calculating Shield Angle and Position
+                displacement = sf::Vector2f((float)localMouse.x - squarePos.x, (float)localMouse.y - squarePos.y);
+                angle = atan2((double)displacement.y, (double)displacement.x) * (180.f/PI);
                 rectangle.shield.setRotation(angle);
                 rectangle.shield.setPosition(squarePos.x, squarePos.y);
                 
-                //-------------------------------ENEMY STATS--------------------------------------------
+                //ENEMY LOGIC
                 // Spawning New Enemies
-                if (!(elapsedTime.asMilliseconds() % (1000 / level)) && currentEnemy <= enemies)
+                if (!(elapsedTime.asMilliseconds() % (int)(1000 / spawnRate)) && currentEnemy < enemies)
                 {
                     white[currentEnemy].state = ALIVE;
                     currentEnemy++;
@@ -297,7 +283,7 @@ int main()
             window.draw(rectangle.shield);
 
             // Drawing Enemies
-            for (int i = 0; i < enemies - 1; ++i)
+            for (int i = 0; i < enemies; ++i)
                 if (white[i].state != DEAD) window.draw(white[i].object);
             
             // Update Freeze
