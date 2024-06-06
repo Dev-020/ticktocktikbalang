@@ -71,7 +71,8 @@ player::player()
     // Body
     body.setSize(sf::Vector2f(100.f, 100.f));
     body.setPosition(0.f, 0.f);
-    body.setFillColor(sf::Color::Green);
+    body.setFillColor(sf::Color(255, 255, 255, 0));
+    body.setOutlineThickness(0.f);
     body.setOrigin(100.f/2, 100.f/2);
 
     // Shield

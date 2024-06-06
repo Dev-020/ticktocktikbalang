@@ -5,7 +5,7 @@ using namespace std;
 int main()
 {
     // Window
-    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "rectangles");
+    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "ECHOES OF APOLAKI: THE TALE OF MIGGY");
 
     // Font
     sf::Font font;
@@ -50,30 +50,48 @@ int main()
 
     // Text Button
     sf::RectangleShape button(sf::Vector2f(300.f, 100.f));
-    button.setFillColor(sf::Color::Yellow);
+    button.setFillColor(sf::Color::Cyan);
 
     // Textures and Sprites
     // Forest
-    sf::Texture texture[2];
+    sf::Texture texture[3];
+    sf::Sprite background_image[3];
     if (!texture[0].loadFromFile("assets/Forest.jpg"))
         return EXIT_FAILURE;
-    sf::Sprite forest(texture[0]);
-    forest.setScale(sf::Vector2f(
-        WIDTH / forest.getLocalBounds().width, 
-        HEIGHT / forest.getLocalBounds().height
+    background_image[0].setTexture(texture[0]);
+    background_image[0].setScale(sf::Vector2f(
+        WIDTH / background_image[0].getLocalBounds().width, 
+        HEIGHT / background_image[0].getLocalBounds().height
     ));
     
-    //Dead Forest
-    if (!texture[1].loadFromFile("assets/Dead_Forest.jpg"))
+    // Swamp
+    if (!texture[1].loadFromFile("assets/swamp.jpg"))
         return EXIT_FAILURE;
-    sf::Sprite dead_forest(texture[1]);
-    dead_forest.setScale(sf::Vector2f(
-        WIDTH / dead_forest.getLocalBounds().width,
-        HEIGHT / forest.getLocalBounds().height
+    background_image[1].setTexture(texture[1]);
+    background_image[1].setScale(sf::Vector2f(
+        WIDTH / background_image[1].getLocalBounds().width,
+        HEIGHT / background_image[1].getLocalBounds().height
     ));
 
+    // Sky
+    if (!texture[2].loadFromFile("assets/Sky.jpg"))
+        return EXIT_FAILURE;
+    background_image[2].setTexture(texture[2]);
+    background_image[2].setScale(sf::Vector2f(
+        WIDTH / background_image[2].getLocalBounds().width,
+        HEIGHT / background_image[2].getLocalBounds().height
+    ));
+
+    // Player
+    sf::Texture player_texture;
+    if (!player_texture.loadFromFile("assets/player.png"))
+        return EXIT_FAILURE;
+    sf::Sprite player_sprite(player_texture);
+    player_sprite.setOrigin(sf::Vector2f(player_sprite.getGlobalBounds().width / 2.f, player_sprite.getGlobalBounds().height / 2.f));
+    player_sprite.setScale(sf::Vector2f(0.2, 0.2));
+
     // variables
-    int hackerman = 0, gameState = 0, tutorial = 0, currentEnemy = 0, freeze, level = 1, end = 1, music = 0;
+    int hackerman = 0, gameState = 0, tutorial = 0, currentEnemy = 0, freeze, level = 1, end = 1, music = 0, background = 0;
     double angle, spawnRate = 1.f;
     
     //SFML Variables
@@ -124,7 +142,7 @@ int main()
             rectangle.state = DEAD;
             gameState = 0;
         }
-        
+
         // Check Number of Enemies Left
         end = 1;
         if (currentEnemy >= enemies)
@@ -142,6 +160,8 @@ int main()
                 rectangle.state = DEAD;
                 window.setMouseCursorGrabbed(false);
                 level++;
+                if (level % 10 == 0)
+                    background = (background + 1) % 3;
             }
         }
             
@@ -250,7 +270,8 @@ int main()
 
         window.clear();
         //Background Image
-        window.draw(dead_forest);
+        window.draw(background_image[background]);
+        
 
         //---------------DEVELOPER STATS--------------------
         if (hackerman)
@@ -326,19 +347,39 @@ int main()
 
         if (!gameState) // MENU
         {
-            // Start Text
-            text.setString((rectangle.health > 0) ? "Start Level!" : "Try Again!");
-            displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, (HEIGHT - text.getLocalBounds().height) / 2.f));
-            
-            // Start Button
-            button.setPosition(text.getPosition().x - 75, text.getPosition().y - 33);
-            button.getGlobalBounds().contains(localMouse.x, localMouse.y) ? button.setFillColor(sf::Color::Yellow) : button.setFillColor(sf::Color::Blue);
-            window.draw(button);
-            window.draw(text);
+            if (!tutorial)
+            {
+                // Start Text
+                text.setString((rectangle.health > 0) ? "Start Level!" : "Try Again!");
+                displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, (HEIGHT - text.getLocalBounds().height) / 2.f));
+                
+                // Start Button
+                button.setPosition(text.getPosition().x - 75, text.getPosition().y - 33);
+                button.getGlobalBounds().contains(localMouse.x, localMouse.y) ? button.setFillColor(sf::Color::Yellow) : button.setFillColor(sf::Color::Blue);
+                window.draw(button);
+                window.draw(text);
 
-            // Exit Application
-            text.setString(sf::String("Exit application with ctrl + C"));
-            displayString(&window, &text, sf::Vector2f(0.f, 1000.f));
+                // Tutorial Text
+                text.setString("Tutorial!");
+                displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, ((HEIGHT - text.getLocalBounds().height) / 2.f) + button.getGlobalBounds().height + 50.f));
+
+                // Tutorial Button
+                button.setFillColor(sf::Color::Green);
+                button.setPosition(text.getPosition().x - 75, text.getPosition().y - 33);
+
+                // Exit Application
+                text.setString(sf::String("Exit application with ctrl + C"));
+                displayString(&window, &text, sf::Vector2f(0.f, 1000.f));
+            }
+            else
+            {
+                // Start Text
+                //text.setString((rectangle.health > 0) ? "Start Level!" : "Try Again!");
+                //displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, (HEIGHT - text.getLocalBounds().height) / 2.f));
+
+
+                
+            }
         }
         else if (gameState)
         {
@@ -365,6 +406,9 @@ int main()
                 angle = atan2((double)displacement.y, (double)displacement.x) * (180.f/PI); // Utilizes Basic Trigonometry
                 rectangle.shield.setRotation(angle);
                 rectangle.shield.setPosition(squarePos.x, squarePos.y);
+
+                // Setting Player Sprite to Center of Hitbox
+                player_sprite.setPosition(sf::Vector2f(squarePos.x, squarePos.y));
 
                 // Checking Skill States
                 time_slow.check_cooldown(elapsedTime.asMilliseconds());
@@ -455,6 +499,7 @@ int main()
             //---------------------RENDER------------------
             // Drawing Player
             window.draw(rectangle.body);
+            window.draw(player_sprite);
             window.draw(rectangle.shield);
 
             // Drawing Enemies

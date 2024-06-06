@@ -7,7 +7,7 @@ compile:
 link:
 	g++ -o main SFML/function.o SFML/main.o -static -LSFML/lib \
 		-lsfml-audio-s -lsfml-graphics-s -lsfml-window-s -lsfml-system-s \
-		-lvorbisfile -lvorbisenc -lvorbis -lwinmm -lopengl32 -lgdi32 -lfreetype  -lflac -logg -lopenal32\
+		-lvorbisfile -lvorbisenc -lvorbis -lwinmm -lopengl32 -lgdi32 -lfreetype -lflac -logg -lopenal32 \
 		-std=c++17
 
 # mingw32-make -f MakeFile
