@@ -18,13 +18,13 @@ void boundary(sf::Shape *shape1, int width, int height)
         shape1->setPosition(pos.x, height);
 }
 
-void game(player *player, enemy *enemy, int enemies, int level)
+void game(player *player, entity *enemy, int enemies, int level)
 {
     // Generating Initial Stats of Enemy
     for (int i = 0; i < enemies; ++i)
     {
         // Set Position of Enemy
-        enemy[i].object.setPosition((rand() % 2) ? WIDTH : 0, rand() % HEIGHT);
+        enemy[i].body.setPosition((rand() % 2) ? WIDTH : 0, rand() % HEIGHT);
 
         // RNG for Enemy Movement Speed
         float mv = ((rand() % (20 + (5 * level))) / 100.f) + MINMV; // Gets Original MV
@@ -32,13 +32,13 @@ void game(player *player, enemy *enemy, int enemies, int level)
         enemy[i].mv = (mv > MAXMV) ? MAXMV : mv;
 
         // Setting color based on Movement Speed
-        enemy[i].object.setFillColor(sf::Color(255 * enemy[i].mv, 0, 0));
+        enemy[i].body.setFillColor(sf::Color(255 * enemy[i].mv, 0, 0));
         enemy[i].state = DEAD;
     }
 
     // Setting Initial Values of Player
-    player->object.setPosition((WIDTH - player->object.getSize().x) / 2.f, (HEIGHT - player->object.getSize().y) / 2.f);
-    player->shield.setPosition(player->object.getPosition().x, player->object.getPosition().y);
+    player->body.setPosition((WIDTH - player->body.getSize().x) / 2.f, (HEIGHT - player->body.getSize().y) / 2.f);
+    player->shield.setPosition(player->body.getPosition().x, player->body.getPosition().y);
     player->health = 4 + (1.5 * level);
     player->state = ALIVE;
 }
@@ -50,16 +50,16 @@ void displayString(sf::RenderWindow *window, sf::Text *text, sf::Vector2f pos)
     return;
 }
 
-enemy::enemy()
+entity::entity()
 {
     state = DEAD;
     mv = ENEMYMV;
-    object.setSize(sf::Vector2f(50.f, 50.f));
-    object.setPosition(-200.f, -200.f);
-    object.setFillColor(sf::Color::Red);
-    object.setOutlineColor(sf::Color::White);
-    object.setOutlineThickness(-1.f);
-    object.setOrigin(50.f/2, 50.f/2);
+    body.setSize(sf::Vector2f(50.f, 50.f));
+    body.setPosition(-200.f, -200.f);
+    body.setFillColor(sf::Color::Red);
+    body.setOutlineColor(sf::Color::White);
+    body.setOutlineThickness(-1.f);
+    body.setOrigin(50.f/2, 50.f/2);
 }
 
 player::player()
@@ -69,19 +69,30 @@ player::player()
     mv = BASEMV;
     
     // Body
-    object.setSize(sf::Vector2f(100.f, 100.f));
-    object.setPosition(0.f, 0.f);
-    object.setFillColor(sf::Color::Green);
-    object.setOrigin(100.f/2, 100.f/2);
+    body.setSize(sf::Vector2f(100.f, 100.f));
+    body.setPosition(0.f, 0.f);
+    body.setFillColor(sf::Color::Green);
+    body.setOrigin(100.f/2, 100.f/2);
 
     // Shield
     shield.setSize(sf::Vector2f(10.f, 150.f));
-    shield.setPosition(object.getPosition().x, object.getPosition().y);
+    shield.setPosition(body.getPosition().x, body.getPosition().y);
     shield.setFillColor(sf::Color(192, 192, 192));
+    shield.setOutlineColor(sf::Color(255, 215, 0));
+    shield.setOutlineThickness(1.f);
     shield.setOrigin(-100.f, 150.f/2);
 }
 
- int effect::time_slow(enemy *enemy, int enemies)
+void skill::check_cooldown(int elapsed_time)
+{
+    if (elapsed_time - timeAtCast >= timer)
+    {
+        cooldown = true;
+        timeAtCast = 0;
+    }
+}
+
+ int effect::time_slow(entity *enemy, int enemies)
 {
     int c = 0;
     for (int i = 0; i < enemies; ++i)
@@ -89,7 +100,57 @@ player::player()
         {
             c++;
             enemy[i].mv /= mv;
-            enemy[i].object.setFillColor(sf::Color(enemy[i].object.getFillColor().r, 0, 255));
+            enemy[i].body.setFillColor(sf::Color(enemy[i].body.getFillColor().r, enemy[i].body.getFillColor().r, 0));
         }
     return c;
+}
+
+void effect::reset()
+{
+    cooldown = true;
+    active = false;
+}
+
+void manifest::barrier(player *player)
+{
+    if (active)
+    {
+        player->shield.setSize(sf::Vector2f(150.f, 150.f));
+        player->shield.setFillColor(sf::Color(255, 255, 0, 100));
+        player->shield.setOrigin(player->shield.getSize().x / 2.f, player->shield.getSize().y / 2.f);
+    }
+    else
+    {
+        player->shield.setSize(sf::Vector2f(10.f, 150.f));
+        player->shield.setFillColor(sf::Color(192, 192, 192));
+        player->shield.setOrigin(-100.f, player->shield.getSize().y / 2.f);
+    }
+}
+
+void manifest::reset(player *player)
+{
+    cooldown = true;
+    active = false;
+    barrier(player);
+}
+
+int manifest::sun_shot(double angle, sf::Vector2f pos)
+{
+    // Searching Unused Entity for bullet
+    int i = 0;
+    for (; i < MAXENTITIES; ++i)
+        if (object[i].state == DEAD)
+            break;
+    if (i >= MAXENTITIES)
+        return -1;
+    // Setting initial values for bullet
+    object[i].body.setPosition(pos.x, pos.y);
+    object[i].state = ALIVE;
+    object[i].mv = mv;
+    object[i].body.setSize(sf::Vector2f(25.f, 15.f));
+    object[i].body.setFillColor(sf::Color(255, 215, 0));
+    object[i].body.setOutlineColor(sf::Color(192, 192, 192));
+    object[i].body.setOutlineThickness(1.f);
+    object[i].body.setRotation(angle);
+    return i + 1;
 }

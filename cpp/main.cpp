@@ -6,7 +6,7 @@ int main()
 {
     // Window
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "rectangles");
-    
+
     // Font
     sf::Font font;
     if (!font.loadFromFile("C:\\Windows\\Fonts\\arial.ttf"))
@@ -36,13 +36,15 @@ int main()
     // --------------Creating Game State-------------------
     // Enemy
     int enemies = 50;
-    enemy white[MAXENEMIES];
+    entity white[MAXENTITIES];
 
     // Player
     player rectangle;
 
     // Skills
     effect time_slow(0, 0, 10.f, 5000, 0);
+    manifest barrier(0, 10000, 7000);
+    manifest sun_shot(1, 1000, 1);
 
     // Start Clock
     sf::Clock clock;
@@ -55,7 +57,7 @@ int main()
 
         // Get Entity Positions
         localMouse = sf::Mouse::getPosition(window);
-        squarePos = rectangle.object.getPosition();
+        squarePos = rectangle.body.getPosition();
 
         // Check Player Health
         if (rectangle.health <= 0)
@@ -116,14 +118,18 @@ int main()
                             if (button.getGlobalBounds().contains(localMouse.x, localMouse.y))
                             {
                                 // Reset Game State
-                                if (!(rectangle.health <= 0) && enemies < MAXENEMIES && level % 5 == 0) enemies += (20 * (level / 5));
+                                if (!(rectangle.health <= 0) && enemies < MAXENTITIES && level % 5 == 0) enemies += (20 * (level / 5));
                                 if (rectangle.state == DEAD)
                                 {
                                     if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 20;
                                     game(&rectangle, white, enemies, level);
                                     currentEnemy = 0;
+
+                                    // Reset Skills
+                                    time_slow.reset();
+                                    barrier.reset(&rectangle);
                                 }
-                                
+
                                 freeze = 3;
                                 gameState = 1;
                             }
@@ -140,14 +146,36 @@ int main()
                         case sf::Keyboard::Scan::C: 
                             if (event.key.control) gameState = 0;
                             break;
-                        case sf::Keyboard::Scan::Num1:
+                        case sf::Keyboard::Scan::Q:
                             if (time_slow.cooldown)
                             {
                                 time_slow.timeAtCast = elapsedTime.asMilliseconds();
                                 time_slow.time_slow(white, enemies);
+                                time_slow.cooldown = false;
                             }
-                            time_slow.cooldown = false;
                             break;
+                        case sf::Keyboard::Scan::E:
+                            if (barrier.cooldown)
+                            {
+                                barrier.active = true;
+                                barrier.timeAtCast = elapsedTime.asMilliseconds();
+                                barrier.barrier(&rectangle);
+                                barrier.cooldown = false;
+                            }
+                            break;
+                    }
+                }
+                else if (event.type == sf::Event::MouseButtonPressed)
+                {
+                    switch (event.mouseButton.button)
+                    {
+                        case sf::Mouse::Left:
+                            if (sun_shot.cooldown)
+                            {
+                                sun_shot.timeAtCast = elapsedTime.asMilliseconds();
+                                sun_shot.duration = sun_shot.sun_shot(angle, squarePos);
+                                sun_shot.cooldown = false;
+                            } 
                     }
                 }
             }
@@ -164,7 +192,7 @@ int main()
                 if (white[i].state != DEAD)
                 {
                     text.setString(to_string(white[i].mv));
-                    displayString(&window, &text, sf::Vector2f(white[i].object.getPosition().x - (text.getLocalBounds().width / 2.f), white[i].object.getPosition().y - (white[i].object.getGlobalBounds().height) - 10.f));
+                    displayString(&window, &text, sf::Vector2f(white[i].body.getPosition().x - (text.getLocalBounds().width / 2.f), white[i].body.getPosition().y - (white[i].body.getGlobalBounds().height) - 10.f));
                 }
             
             // Current Player Movemenet Speed
@@ -196,8 +224,19 @@ int main()
             displayString(&window, &text, sf::Vector2f(squarePos.x - text.getLocalBounds().width / 2.f, squarePos.y - 105.f));
 
             // Time Slow
-            text.setString("Time Slow: " + to_string((time_slow.cooldown) ? 0 : time_slow.timer - (elapsedTime.asMilliseconds() - time_slow.timeAtCast)));
+            text.setString("Time Slow: " + to_string((time_slow.cooldown) ? 0 : (time_slow.timer - (elapsedTime.asMilliseconds() - time_slow.timeAtCast)) / 1000.f));
             displayString(&window, &text, sf::Vector2f(0.f, 250.f));
+
+            // Barrier
+            text.setString("Barrier: " + to_string((barrier.cooldown) ? 0 : (barrier.timer - (elapsedTime.asMilliseconds() - barrier.timeAtCast)) / 1000.f));
+            displayString(&window, &text, sf::Vector2f(0.f, 300.f));
+
+            // Barrier Duration
+            if (barrier.active)
+            {
+                text.setString("Duration: " + to_string((barrier.duration - (elapsedTime.asMilliseconds() - barrier.timeAtCast)) / 1000.f));
+                displayString(&window, &text, sf::Vector2f(WIDTH - text.getLocalBounds().width, 300.f));
+            }
 
             // Pause Application
             text.setString(sf::String("Pause Session with ctrl + C"));
@@ -238,16 +277,16 @@ int main()
                 // Player Movement
                 //mv = (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) ? BASEMV * 0.50 : BASEMV;
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-                    rectangle.object.move(-rectangle.mv, 0.f);
+                    rectangle.body.move(-rectangle.mv, 0.f);
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-                    rectangle.object.move(rectangle.mv, 0.f);
+                    rectangle.body.move(rectangle.mv, 0.f);
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-                    rectangle.object.move(0.f, -rectangle.mv);
+                    rectangle.body.move(0.f, -rectangle.mv);
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-                    rectangle.object.move(0.f, rectangle.mv);
+                    rectangle.body.move(0.f, rectangle.mv);
 
                 // Check if Squares at edge of window
-                boundary(&rectangle.object, WIDTH, HEIGHT);
+                boundary(&rectangle.body, WIDTH, HEIGHT);
                 
                 // Calculating Shield Angle and Position
                 displacement = sf::Vector2f((float)localMouse.x - squarePos.x, (float)localMouse.y - squarePos.y);
@@ -255,12 +294,16 @@ int main()
                 rectangle.shield.setRotation(angle);
                 rectangle.shield.setPosition(squarePos.x, squarePos.y);
 
-                // Checking Skill Cooldowns
-                //Time Slow
-                if (elapsedTime.asMilliseconds() - time_slow.timeAtCast >= time_slow.timer)
+                // Checking Skill States
+                time_slow.check_cooldown(elapsedTime.asMilliseconds());
+                barrier.check_cooldown(elapsedTime.asMilliseconds());
+                sun_shot.check_cooldown(elapsedTime.asMilliseconds());
+                
+                // Barrier Duration
+                if (barrier.active && elapsedTime.asMilliseconds() - barrier.timeAtCast >= barrier.duration)
                 {
-                    time_slow.cooldown = true;
-                    time_slow.timeAtCast = 0;
+                    barrier.active = false;
+                    barrier.barrier(&rectangle);
                 }
                 
                 //ENEMY LOGIC
@@ -277,37 +320,62 @@ int main()
                     if (white[i].state != DEAD)
                     {
                         // Enemy Movement
-                        if (white[i].object.getPosition().x > squarePos.x)
-                            white[i].object.move(-white[i].mv, 0.f);
-                        if (white[i].object.getPosition().y > squarePos.y)
-                            white[i].object.move(0.f, -white[i].mv);    
-                        if (white[i].object.getPosition().x < squarePos.x)
-                            white[i].object.move(white[i].mv, 0.f);
-                        if (white[i].object.getPosition().y < squarePos.y)
-                            white[i].object.move(0.f, white[i].mv);
+                        if (white[i].body.getPosition().x > squarePos.x)
+                            white[i].body.move(-white[i].mv, 0.f);
+                        if (white[i].body.getPosition().y > squarePos.y)
+                            white[i].body.move(0.f, -white[i].mv);    
+                        if (white[i].body.getPosition().x < squarePos.x)
+                            white[i].body.move(white[i].mv, 0.f);
+                        if (white[i].body.getPosition().y < squarePos.y)
+                            white[i].body.move(0.f, white[i].mv);
                         
                         // Collisions
-                        bool objectCol = collision(&rectangle.object, &white[i].object);
-                        bool shieldCol = collision(&rectangle.shield, &white[i].object);
+                        bool objectCol = collision(&rectangle.body, &white[i].body);
+                        bool shieldCol = collision(&rectangle.shield, &white[i].body);
                         if (objectCol || shieldCol)
                         {
                             if (objectCol) rectangle.health--;
-                            white[i].object.setPosition(-200.f, -200.f);
+                            white[i].body.setPosition(-200.f, -200.f);
                             white[i].state = DEAD;
-                        } 
+                            continue;
+                        }
+
+                        // Sun Shot Collisions
+                        for (int j = 0; j < sun_shot.duration; ++j)
+                        {
+                            if (sun_shot.object[j].state != DEAD)
+                            {
+                                if (collision(&white[i].body, &sun_shot.object[j].body));
+                                {
+                                    white[i].body.setPosition(-200.f, -200.f);
+                                    white[i].state = DEAD;
+                                    sun_shot.object[j].body.setPosition(-200.f, -200.f);
+                                    sun_shot.object[j].state = DEAD;
+                                    continue;
+                                }
+                            }
+                            
+                        }
+                        
                     }
                 }
             }
             
             //---------------------DRAW ENTITIES------------------
             // Drawing Player
-            window.draw(rectangle.object);
+            window.draw(rectangle.body);
             window.draw(rectangle.shield);
 
             // Drawing Enemies
             for (int i = 0; i < enemies; ++i)
-                if (white[i].state != DEAD) window.draw(white[i].object);
+                if (white[i].state != DEAD) window.draw(white[i].body);
             
+            // Drawing Other Entites
+            // Sun Shot bullets
+            for (int i = 0; i < sun_shot.duration; ++i)
+                if (sun_shot.object[i].state != DEAD) window.draw(sun_shot.object[i].body);
+
+
             // Update Freeze
             if (elapsedTime.asMilliseconds() % 1000 == 0)
                 freeze--;

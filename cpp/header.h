@@ -16,22 +16,22 @@ const float ENEMYMV = 0.3;
 const float MINMV = 0.1;
 const float MAXMV = 1;
 const double PI = 3.141592653589793;
-const int MAXENEMIES = 1000;
+const int MAXENTITIES = 1000;
 
 // Classes
 enum objectState {
     DEAD = 0, ALIVE
 };
 
-class enemy{
+class entity{
 public:
-    sf::RectangleShape object;
+    sf::RectangleShape body;
     int state;
     float mv;
-    enemy();
+    entity();
 };
 
-class player: public enemy{
+class player: public entity{
 public:
     sf::RectangleShape shield;
     int health;
@@ -40,13 +40,17 @@ public:
 
 class skill{
 public:
-    sf::RectangleShape object;
+    entity object[MAXENTITIES];
     int timer, timeAtCast, duration;
-    bool cooldown;
+    bool cooldown, active;
     skill(){
         cooldown = true;
+        active = false;
         timer = timeAtCast = duration = 0;
     }
+    void reset();
+    void check_cooldown(int elapsed_time);
+    void check_duration(int elapsed_time);
 };
 
 class manifest: public skill{
@@ -60,7 +64,9 @@ public:
         timer = t;
         duration = d;
     }
-    void barrier(player player);
+    void reset(player *player);
+    void barrier(player *player);
+    int sun_shot(double angle, sf::Vector2f pos);
 };
 
 class effect: public skill{
@@ -77,10 +83,11 @@ public:
         timer = t;
         duration = d;
     }
-    int time_slow(enemy *enemy, int enemies);
+    void reset();
+    int time_slow(entity *entity, int enemies);
 };
 
-void game(player *player, enemy *enemy, int enemies, int level);
+void game(player *player, entity *entity, int enemies, int level);
 bool collision(sf::Shape *shape1, sf::Shape *shape2);
 void boundary(sf::Shape *shape1, int width, int height);
 void displayString(sf::RenderWindow *window, sf::Text *text, sf::Vector2f pos);
