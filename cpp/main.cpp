@@ -121,7 +121,7 @@ int main()
                                 if (!(rectangle.health <= 0) && enemies < MAXENTITIES && level % 5 == 0) enemies += (20 * (level / 5));
                                 if (rectangle.state == DEAD)
                                 {
-                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 20;
+                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 15;
                                     game(&rectangle, white, enemies, level);
                                     currentEnemy = 0;
 
@@ -229,23 +229,27 @@ int main()
             displayString(&window, &text, sf::Vector2f(squarePos.x - text.getLocalBounds().width / 2.f, squarePos.y - 105.f));
 
             // Time Slow
-            text.setString("Time Slow: " + to_string((time_slow.cooldown) ? 0 : (time_slow.timer - (elapsedTime.asMilliseconds() - time_slow.timeAtCast)) / 1000.f));
-            displayString(&window, &text, sf::Vector2f(0.f, 250.f));
+            text.setString("[Q] Time Slow: " + to_string((time_slow.cooldown) ? 0 : (time_slow.timer - (elapsedTime.asMilliseconds() - time_slow.timeAtCast)) / 1000.f));
+            displayString(&window, &text, sf::Vector2f(0.f, HEIGHT - 50.f));
 
             // Barrier
-            text.setString("Barrier: " + to_string((barrier.cooldown) ? 0 : (barrier.timer - (elapsedTime.asMilliseconds() - barrier.timeAtCast)) / 1000.f));
-            displayString(&window, &text, sf::Vector2f(0.f, 300.f));
+            text.setString("[E] Barrier: " + to_string((barrier.cooldown) ? 0 : (barrier.timer - (elapsedTime.asMilliseconds() - barrier.timeAtCast)) / 1000.f));
+            displayString(&window, &text, sf::Vector2f(0.f, HEIGHT - 100.f));
 
             // Barrier Duration
             if (barrier.active)
             {
                 text.setString("Duration: " + to_string((barrier.duration - (elapsedTime.asMilliseconds() - barrier.timeAtCast)) / 1000.f));
-                displayString(&window, &text, sf::Vector2f(WIDTH - text.getLocalBounds().width, 300.f));
+                displayString(&window, &text, sf::Vector2f(WIDTH - text.getLocalBounds().width - 10.f, 0.f));
             }
+
+            // Sun Shot
+            text.setString("[Left Click] Sun Shot: " + to_string((sun_shot.cooldown) ? 0 : (sun_shot.timer - (elapsedTime.asMilliseconds() - sun_shot.timeAtCast)) / 1000.f));
+            displayString(&window, &text, sf::Vector2f(0.f, HEIGHT - 150.f));
 
             // Pause Application
             text.setString(sf::String("Pause Session with ctrl + C"));
-            displayString(&window, &text, sf::Vector2f(0.f, 1000.f));
+            displayString(&window, &text, sf::Vector2f(WIDTH - text.getLocalBounds().width, 1000.f));
         }
 
         //--------------------------GENERAL STATS----------------------
@@ -295,7 +299,7 @@ int main()
                 
                 // Calculating Shield Angle and Position
                 displacement = sf::Vector2f((float)localMouse.x - squarePos.x, (float)localMouse.y - squarePos.y);
-                angle = atan2((double)displacement.y, (double)displacement.x) * (180.f/PI);
+                angle = atan2((double)displacement.y, (double)displacement.x) * (180.f/PI); // Utilizes Basic Trigonometry
                 rectangle.shield.setRotation(angle);
                 rectangle.shield.setPosition(squarePos.x, squarePos.y);
 
@@ -316,7 +320,7 @@ int main()
                 {
                     if (sun_shot.object[i].state == ALIVE)
                     {
-                        // Get trajectory of bullet using polar coordinates
+                        // Get trajectory of bullet using polar coordinates with r being the movement speed
                         float x = sun_shot.object[i].mv * cos(sun_shot.get_sun_shot_angle(i) / (180.f/PI));
                         float y = sun_shot.object[i].mv * sin(sun_shot.get_sun_shot_angle(i) / (180.f/PI));
                         sun_shot.object[i].body.move(x, y);
