@@ -37,7 +37,7 @@ void game(player *player, entity *enemy, int enemies, int level)
     }
 
     // Setting Initial Values of Player
-    player->body.setPosition((WIDTH - player->body.getSize().x) / 2.f, (HEIGHT - player->body.getSize().y) / 2.f);
+    player->body.setPosition(WIDTH  / 2.f, HEIGHT / 2.f);
     player->shield.setPosition(player->body.getPosition().x, player->body.getPosition().y);
     player->health = 4 + (1.5 * level);
     player->state = ALIVE;
@@ -119,6 +119,8 @@ void manifest::barrier(player *player)
         player->shield.setSize(sf::Vector2f(150.f, 150.f));
         player->shield.setFillColor(sf::Color(255, 255, 0, 100));
         player->shield.setOrigin(player->shield.getSize().x / 2.f, player->shield.getSize().y / 2.f);
+        player->shield.setOutlineThickness(3.f);
+        player->shield.setOutlineColor(sf::Color(125, 125, 0));
     }
     else
     {

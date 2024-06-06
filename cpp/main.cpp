@@ -52,6 +52,10 @@ int main()
     sf::RectangleShape button(sf::Vector2f(300.f, 100.f));
     button.setFillColor(sf::Color::Cyan);
 
+    // Tutorial Button
+    sf::RectangleShape button1(sf::Vector2(300.f, 100.f));
+    button1.setFillColor(sf::Color::Green);
+
     // Textures and Sprites
     // Forest
     sf::Texture texture[3];
@@ -99,6 +103,9 @@ int main()
     sf::Vector2f squarePos;
     sf::Vector2f displacement;
     sf::Time elapsedTime;
+    sf::RectangleShape golden_barrier;
+    sf::RectangleShape golden_bullet;
+    sf::RectangleShape border;
 
     // --------------Creating Game State-------------------
     // Enemy
@@ -118,6 +125,31 @@ int main()
 
     // Play background music
     background_music[0].play();
+
+    // Setting up Tutorial Visuals
+    //Border
+    border.setFillColor(sf::Color(0, 0, 0, 200));
+    border.setOutlineThickness(5.f);
+    border.setOutlineColor(sf::Color::Black);
+    border.setSize(sf::Vector2f(400.f, 700.f));
+    border.setPosition(WIDTH - 500.f, 150.f);
+
+
+    // Golden Barrier
+    golden_barrier.setSize(sf::Vector2f(150.f, 150.f));
+    golden_barrier.setFillColor(sf::Color(255, 255, 0, 200));
+    golden_barrier.setOrigin(golden_barrier.getSize().x / 2.f, golden_barrier.getSize().y / 2.f);
+    golden_barrier.setOutlineThickness(3.f);
+    golden_barrier.setOutlineColor(sf::Color(255, 255, 0));
+    golden_barrier.setPosition(WIDTH - 300.f, 530.f);
+
+    // Golden Bullet
+    golden_bullet.setSize(sf::Vector2f(25.f, 15.f));
+    golden_bullet.setFillColor(sf::Color(255, 215, 0));
+    golden_bullet.setOutlineColor(sf::Color(192, 192, 192));
+    golden_bullet.setOrigin(25.f/2.f, 15.f/2.f);
+    golden_bullet.setOutlineThickness(1.f);
+    golden_bullet.setPosition(WIDTH - 300.f, 720.f);
 
     //----------------------------GAME START--------------------------
     while (window.isOpen())
@@ -160,7 +192,7 @@ int main()
                 rectangle.state = DEAD;
                 window.setMouseCursorGrabbed(false);
                 level++;
-                if (level % 10 == 0)
+                if (level % 5 == 0)
                     background = (background + 1) % 3;
             }
         }
@@ -195,14 +227,15 @@ int main()
                     switch (event.mouseButton.button)
                     {
                         case sf::Mouse::Left: // Initializing Game Values at Start
-                            if (button.getGlobalBounds().contains(localMouse.x, localMouse.y))
+                            if (!tutorial && button.getGlobalBounds().contains(localMouse.x, localMouse.y))
                             {
                                 // Reset Game State
                                 if (!(rectangle.health <= 0) && enemies < MAXENTITIES && level % 5 == 0) enemies += (20 * (level / 5));
                                 if (rectangle.state == DEAD)
                                 {
-                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 15;
+                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 10;
                                     game(&rectangle, white, enemies, level);
+                                    player_sprite.setPosition(WIDTH / 2.f, HEIGHT / 2.f);
                                     currentEnemy = 0;
 
                                     // Reset Skills
@@ -212,6 +245,10 @@ int main()
                                 window.setMouseCursorGrabbed(true);
                                 freeze = 0;
                                 gameState = 1;
+                            }
+                            else if (button1.getGlobalBounds().contains(localMouse.x, localMouse.y))
+                            {
+                                tutorial = (tutorial + 1) % 2;
                             }
 
                             break;
@@ -272,7 +309,6 @@ int main()
         //Background Image
         window.draw(background_image[background]);
         
-
         //---------------DEVELOPER STATS--------------------
         if (hackerman)
         {
@@ -364,8 +400,10 @@ int main()
                 displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, ((HEIGHT - text.getLocalBounds().height) / 2.f) + button.getGlobalBounds().height + 50.f));
 
                 // Tutorial Button
-                button.setFillColor(sf::Color::Green);
-                button.setPosition(text.getPosition().x - 75, text.getPosition().y - 33);
+                button1.setPosition(text.getPosition().x - 95, text.getPosition().y - 33);
+                button1.getGlobalBounds().contains(localMouse.x, localMouse.y) ? button1.setFillColor(sf::Color::Yellow) : button1.setFillColor(sf::Color::Green);
+                window.draw(button1);
+                window.draw(text);
 
                 // Exit Application
                 text.setString(sf::String("Exit application with ctrl + C"));
@@ -373,12 +411,46 @@ int main()
             }
             else
             {
-                // Start Text
-                //text.setString((rectangle.health > 0) ? "Start Level!" : "Try Again!");
-                //displayString(&window, &text, sf::Vector2f((WIDTH - text.getLocalBounds().width) / 2.f, (HEIGHT - text.getLocalBounds().height) / 2.f));
+                // Tutorial Text
+                text.setString("Go Back!");
+                displayString(&window, &text, sf::Vector2f(100.f, 50.f));
 
+                // Tutorial Button
+                button1.setPosition(text.getPosition().x - 87, text.getPosition().y - 34);
+                button1.getGlobalBounds().contains(localMouse.x, localMouse.y) ? button1.setFillColor(sf::Color::Yellow) : button1.setFillColor(sf::Color::Green);
+                window.draw(button1);
+                window.draw(text);
 
-                
+                // Description of Game
+                text.setString("Endless Mode: Surive for as many level as you can.");
+                displayString(&window, &text, sf::Vector2f(50.f, 300.f));
+                text.setString("Each increase in level makes enemies move and spawn faster!");
+                displayString(&window, &text, sf::Vector2f(50.f, 340.f));
+
+                // Mechanics of Game
+                text.setString("Move your character with the WASD keys.");
+                displayString(&window, &text, sf::Vector2f(50.f, 450.f));
+                text.setString("Move your mouse to block enemies using your shield!");
+                displayString(&window, &text, sf::Vector2f(50.f, 490.f));
+                text.setString("Sun Shot: Press [Left Click] to shoot golden bullets at enemies!");
+                displayString(&window, &text, sf::Vector2f(50.f, 530.f));
+                text.setString("Time Slow: Press [Q] to reduce the movement speed of spawned enemies!");
+                displayString(&window, &text, sf::Vector2f(50.f, 570.f));
+                text.setString("Barrier: Press [E] to transform your shield into a golden barrier!");
+                displayString(&window, &text, sf::Vector2f(50.f, 610.f));
+
+                // Pausing and Exiting the Game
+                text.setString("Pause Game: Press [ctrl + C] to pause the game during each level.");
+                displayString(&window, &text, sf::Vector2f(50.f, 720.f));
+                text.setString("Exit Game: Press [ctrl + C] again while in the Menu Screen to exit game.");
+                displayString(&window, &text, sf::Vector2f(50.f, 760.f));
+
+                // Golden Barrier
+                window.draw(border);
+                window.draw(golden_barrier);
+                window.draw(golden_bullet);
+                player_sprite.setPosition(WIDTH - 300.f, 300.f);
+                window.draw(player_sprite);
             }
         }
         else if (gameState)
