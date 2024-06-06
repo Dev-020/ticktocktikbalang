@@ -134,7 +134,7 @@ void manifest::reset(player *player)
     barrier(player);
 }
 
-int manifest::sun_shot(double angle, sf::Vector2f pos)
+void manifest::sun_shot(double angle, sf::Vector2f pos)
 {
     // Searching Unused Entity for bullet
     int i = 0;
@@ -142,15 +142,17 @@ int manifest::sun_shot(double angle, sf::Vector2f pos)
         if (object[i].state == DEAD)
             break;
     if (i >= MAXENTITIES)
-        return -1;
+        return;
     // Setting initial values for bullet
+    bullet_angle[i] = angle;
     object[i].body.setPosition(pos.x, pos.y);
     object[i].state = ALIVE;
     object[i].mv = mv;
     object[i].body.setSize(sf::Vector2f(25.f, 15.f));
     object[i].body.setFillColor(sf::Color(255, 215, 0));
     object[i].body.setOutlineColor(sf::Color(192, 192, 192));
+    object[i].body.setOrigin(25.f/2.f, 15.f/2.f);
     object[i].body.setOutlineThickness(1.f);
     object[i].body.setRotation(angle);
-    return i + 1;
+    return;
 }

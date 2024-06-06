@@ -54,24 +54,34 @@ public:
 };
 
 class manifest: public skill{
+protected:
+    double bullet_angle[MAXENTITIES]; // <----- FOR SUN SHOT ONLY
 public:
     float mv;
+    
     manifest(){
         mv = 0;
+        for (int i = 0; i < MAXENTITIES; ++i)
+            bullet_angle[i] = -1;
     }
     manifest(float m, int t, int d){
         mv = m;
         timer = t;
         duration = d;
+        for (int i = 0; i < MAXENTITIES; ++i)
+            bullet_angle[i] = -1;
     }
     void reset(player *player);
     void barrier(player *player);
-    int sun_shot(double angle, sf::Vector2f pos);
+    void sun_shot(double angle, sf::Vector2f pos);
+    double get_sun_shot_angle(int i){
+        return bullet_angle[i];
+    }
 };
 
 class effect: public skill{
 public:
-    int health, state;
+    int health, state; 
     float mv;
     effect(){
         health = state = mv = 0;

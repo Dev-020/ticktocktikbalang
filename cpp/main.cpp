@@ -44,7 +44,7 @@ int main()
     // Skills
     effect time_slow(0, 0, 10.f, 5000, 0);
     manifest barrier(0, 10000, 7000);
-    manifest sun_shot(1, 1000, 1);
+    manifest sun_shot(3, 100, 1);
 
     // Start Clock
     sf::Clock clock;
@@ -129,10 +129,11 @@ int main()
                                     time_slow.reset();
                                     barrier.reset(&rectangle);
                                 }
-
+                                window.setMouseCursorGrabbed(true);
                                 freeze = 3;
                                 gameState = 1;
                             }
+
                             break;
                     }
                 }
@@ -144,7 +145,11 @@ int main()
                     switch (event.key.scancode)
                     {
                         case sf::Keyboard::Scan::C: 
-                            if (event.key.control) gameState = 0;
+                            if (event.key.control)
+                            {
+                                window.setMouseCursorGrabbed(false);
+                                gameState = 0;
+                            }
                             break;
                         case sf::Keyboard::Scan::Q:
                             if (time_slow.cooldown)
@@ -173,7 +178,7 @@ int main()
                             if (sun_shot.cooldown)
                             {
                                 sun_shot.timeAtCast = elapsedTime.asMilliseconds();
-                                sun_shot.duration = sun_shot.sun_shot(angle, squarePos);
+                                sun_shot.sun_shot(angle, squarePos);
                                 sun_shot.cooldown = false;
                             } 
                     }
@@ -305,6 +310,26 @@ int main()
                     barrier.active = false;
                     barrier.barrier(&rectangle);
                 }
+
+                // Sun Shot Movement
+                for (int i = 0; i < MAXENTITIES; ++i)
+                {
+                    if (sun_shot.object[i].state == ALIVE)
+                    {
+                        // Get trajectory of bullet using polar coordinates
+                        float x = sun_shot.object[i].mv * cos(sun_shot.get_sun_shot_angle(i) / (180.f/PI));
+                        float y = sun_shot.object[i].mv * sin(sun_shot.get_sun_shot_angle(i) / (180.f/PI));
+                        sun_shot.object[i].body.move(x, y);
+
+                        // Delete bullet if it goes outside screen
+                        sf::Vector2f bullet = sun_shot.object[i].body.getPosition();
+                        if (bullet.x > WIDTH || bullet.x < 0 || bullet.y > HEIGHT || bullet.y < 0)
+                        {   
+                            sun_shot.object[i].state = DEAD;
+                            sun_shot.object[i].body.setPosition(-200.f, -200.f);
+                        }
+                    }
+                }
                 
                 //ENEMY LOGIC
                 // Spawning New Enemies
@@ -341,22 +366,20 @@ int main()
                         }
 
                         // Sun Shot Collisions
-                        for (int j = 0; j < sun_shot.duration; ++j)
+                        for (int j = 0; j < MAXENTITIES; ++j)
                         {
                             if (sun_shot.object[j].state != DEAD)
                             {
-                                if (collision(&white[i].body, &sun_shot.object[j].body));
+                                if (collision(&white[i].body, &sun_shot.object[j].body))//; <------------ I wasted 30 minutes wondering why the enemies insta die.
                                 {
-                                    white[i].body.setPosition(-200.f, -200.f);
+                                    white[i].body.setPosition(0.f, 0.f);
                                     white[i].state = DEAD;
                                     sun_shot.object[j].body.setPosition(-200.f, -200.f);
                                     sun_shot.object[j].state = DEAD;
                                     continue;
                                 }
                             }
-                            
                         }
-                        
                     }
                 }
             }
@@ -372,9 +395,8 @@ int main()
             
             // Drawing Other Entites
             // Sun Shot bullets
-            for (int i = 0; i < sun_shot.duration; ++i)
+            for (int i = 0; i < MAXENTITIES; ++i)
                 if (sun_shot.object[i].state != DEAD) window.draw(sun_shot.object[i].body);
-
 
             // Update Freeze
             if (elapsedTime.asMilliseconds() % 1000 == 0)
