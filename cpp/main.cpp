@@ -12,6 +12,36 @@ int main()
     if (!font.loadFromFile("C:\\Windows\\Fonts\\arial.ttf"))
         return EXIT_FAILURE;
 
+    // Music
+    sf::Music background_music[2];
+    if(!background_music[0].openFromFile("assets/Wild_Horseradish_Jam.wav"))
+        return EXIT_FAILURE;
+    sf::Music background_music2;
+    if(!background_music[1].openFromFile("assets/Valley_Comes_Alive.wav"))
+        return EXIT_FAILURE;
+
+    // Sound Effects
+    // Sun Shot
+    sf::SoundBuffer buffer[3];
+    if (!buffer[0].loadFromFile("assets/Laser_Gun.wav"))
+        return EXIT_FAILURE;
+    sf::Sound sun_shot_sound;
+    sun_shot_sound.setBuffer(buffer[0]);
+
+    // Time Slow
+    if (!buffer[1].loadFromFile("assets/Time_Slow.wav"))
+        return EXIT_FAILURE;
+    sf::Sound time_slow_sound;
+    time_slow_sound.setBuffer(buffer[1]);
+    time_slow_sound.setVolume(25.f);
+
+    // Shield Hit
+    if (!buffer[2].loadFromFile("assets/Shield_Hit_Fast.wav"))
+        return EXIT_FAILURE;
+    sf::Sound shield_hit_sound;
+    shield_hit_sound.setBuffer(buffer[2]);
+    shield_hit_sound.setVolume(25.f);
+
     // Text
     sf::Text text("Hello World", font, 28);
     text.setFillColor(sf::Color::White);
@@ -22,9 +52,28 @@ int main()
     sf::RectangleShape button(sf::Vector2f(300.f, 100.f));
     button.setFillColor(sf::Color::Yellow);
 
+    // Textures and Sprites
+    // Forest
+    sf::Texture texture[2];
+    if (!texture[0].loadFromFile("assets/Forest.jpg"))
+        return EXIT_FAILURE;
+    sf::Sprite forest(texture[0]);
+    forest.setScale(sf::Vector2f(
+        WIDTH / forest.getLocalBounds().width, 
+        HEIGHT / forest.getLocalBounds().height
+    ));
+    
+    //Dead Forest
+    if (!texture[1].loadFromFile("assets/Dead_Forest.jpg"))
+        return EXIT_FAILURE;
+    sf::Sprite dead_forest(texture[1]);
+    dead_forest.setScale(sf::Vector2f(
+        WIDTH / dead_forest.getLocalBounds().width,
+        HEIGHT / forest.getLocalBounds().height
+    ));
+
     // variables
-    bool n = false;
-    int hackerman = 0, gameState = 0, currentEnemy = 0, freeze, level = 1, end = 1;
+    int hackerman = 0, gameState = 0, tutorial = 0, currentEnemy = 0, freeze, level = 1, end = 1, music = 0;
     double angle, spawnRate = 1.f;
     
     //SFML Variables
@@ -42,16 +91,26 @@ int main()
     player rectangle;
 
     // Skills
-    effect time_slow(0, 0, 10.f, 5000, 0);
-    manifest barrier(0, 10000, 7000);
+    effect time_slow(0, 0, 10.f, 15000, 0);
+    manifest barrier(0, 30000, 6000); // Time is in Milliseconds | 1 Second = 1000 Millisecond
     manifest sun_shot(3, 100, 1);
 
     // Start Clock
     sf::Clock clock;
 
+    // Play background music
+    background_music[0].play();
+
     //----------------------------GAME START--------------------------
     while (window.isOpen())
     {
+        // Loop Background Music
+        if (background_music[music].getStatus() == sf::SoundSource::Stopped)
+        {
+            music = (music + 1) % 2;
+            background_music[music].play();
+        }
+
         // TIME
         elapsedTime = clock.getElapsedTime();
 
@@ -81,6 +140,7 @@ int main()
                 currentEnemy = 0;
                 gameState = 0;
                 rectangle.state = DEAD;
+                window.setMouseCursorGrabbed(false);
                 level++;
             }
         }
@@ -97,7 +157,7 @@ int main()
             }
             else if (event.type == sf::Event::KeyPressed)
             {
-                switch( event.key.scancode)
+                switch(event.key.scancode)
                 {
                     case sf::Keyboard::N:
                         if (event.key.control) hackerman = (hackerman + 1) % 2;
@@ -130,7 +190,7 @@ int main()
                                     barrier.reset(&rectangle);
                                 }
                                 window.setMouseCursorGrabbed(true);
-                                freeze = 3;
+                                freeze = 0;
                                 gameState = 1;
                             }
 
@@ -157,6 +217,7 @@ int main()
                                 time_slow.timeAtCast = elapsedTime.asMilliseconds();
                                 time_slow.time_slow(white, enemies);
                                 time_slow.cooldown = false;
+                                time_slow_sound.play();
                             }
                             break;
                         case sf::Keyboard::Scan::E:
@@ -180,14 +241,16 @@ int main()
                                 sun_shot.timeAtCast = elapsedTime.asMilliseconds();
                                 sun_shot.sun_shot(angle, squarePos);
                                 sun_shot.cooldown = false;
+                                sun_shot_sound.play();
                             } 
                     }
                 }
             }
-            
         }
 
         window.clear();
+        //Background Image
+        window.draw(dead_forest);
 
         //---------------DEVELOPER STATS--------------------
         if (hackerman)
@@ -364,6 +427,7 @@ int main()
                         if (objectCol || shieldCol)
                         {
                             if (objectCol) rectangle.health--;
+                            if (shieldCol) shield_hit_sound.play();
                             white[i].body.setPosition(-200.f, -200.f);
                             white[i].state = DEAD;
                             continue;
@@ -388,7 +452,7 @@ int main()
                 }
             }
             
-            //---------------------DRAW ENTITIES------------------
+            //---------------------RENDER------------------
             // Drawing Player
             window.draw(rectangle.body);
             window.draw(rectangle.shield);
