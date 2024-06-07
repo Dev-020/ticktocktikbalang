@@ -8,14 +8,14 @@ bool collision(sf::Shape *shape1, sf::Shape *shape2)
 void boundary(sf::Shape *shape1, int width, int height)
 {
     sf::Vector2f pos = shape1->getPosition();
-    if (pos.x > width)
-        shape1->setPosition(0.f, pos.y);
-    if (pos.x < -100)
-        shape1->setPosition(width, pos.y);
-    if (pos.y > height)
-        shape1->setPosition(pos.x, 0.f);
-    if (pos.y < -100)
-        shape1->setPosition(pos.x, height);
+    if (pos.x > width - 50.f)
+        shape1->setPosition(width - 50.f, pos.y);
+    if (pos.x < 50.f)
+        shape1->setPosition(50.f, pos.y);
+    if (pos.y > height - 50.f)
+        shape1->setPosition(pos.x, height - 50.f);
+    if (pos.y < 50.f)
+        shape1->setPosition(pos.x, 50.f);
 }
 
 void game(player *player, entity *enemy, int enemies, int level)

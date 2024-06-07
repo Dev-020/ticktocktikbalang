@@ -230,10 +230,10 @@ int main()
                             if (!tutorial && button.getGlobalBounds().contains(localMouse.x, localMouse.y))
                             {
                                 // Reset Game State
-                                if (!(rectangle.health <= 0) && enemies < MAXENTITIES && level % 5 == 0) enemies += (20 * (level / 5));
                                 if (rectangle.state == DEAD)
                                 {
-                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 10;
+                                    if (!(rectangle.health <= 0) && enemies < MAXENTITIES && level % 5 == 0) enemies += (20 * (level / 5));
+                                    if (!(rectangle.health <= 0)) spawnRate = 1 + (float)level / 5;
                                     game(&rectangle, white, enemies, level);
                                     player_sprite.setPosition(WIDTH / 2.f, HEIGHT / 2.f);
                                     currentEnemy = 0;
@@ -471,6 +471,7 @@ int main()
                     rectangle.body.move(0.f, rectangle.mv);
 
                 // Check if Squares at edge of window
+                boundary(&rectangle.body, WIDTH, HEIGHT);
                 boundary(&rectangle.body, WIDTH, HEIGHT);
                 
                 // Calculating Shield Angle and Position
